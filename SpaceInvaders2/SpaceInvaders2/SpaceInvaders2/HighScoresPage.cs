@@ -12,7 +12,7 @@ namespace SpaceInvaders2
 	public class HighScoresPage : ContentPage
 	{
 		private ListView listView;
-		string DbPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "MyDB.db3");
+		string DbPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "MyDBb.db3");
 
 		public HighScoresPage ()
 		{

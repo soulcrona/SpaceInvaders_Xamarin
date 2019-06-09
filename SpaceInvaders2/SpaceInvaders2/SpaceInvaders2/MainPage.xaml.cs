@@ -16,7 +16,7 @@ namespace SpaceInvaders2
     public partial class MainPage : ContentPage
     {
         //Environment instead of System.Environment
-        string DbPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "MyDB.db3");
+        string DbPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "MyDBb.db3");
 
         Ship Ship = new Ship();
 
@@ -53,10 +53,10 @@ namespace SpaceInvaders2
         {
             InitializeComponent();
 
-            if (!File.Exists(DbPath))
-            {
-                File.Create(DbPath);
-            }
+            //if (!File.Exists(DbPath))
+            //{
+            //    File.Create(DbPath);
+            //}
 
             StartLoop();
         }
