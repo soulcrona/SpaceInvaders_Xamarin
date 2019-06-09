@@ -8,17 +8,15 @@ using System.Threading;
 using SkiaSharp;
 //using SkiaSharp.Views.Desktop;
 using SkiaSharp.Views.Forms;
-//using SQLite;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using SQLite;
 
 namespace SpaceInvaders2
 {
     public partial class MainPage : ContentPage
     {
+        //Environment instead of System.Environment
         string DbPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "MyDB.db3");
-        
 
         Ship Ship = new Ship();
 
@@ -54,7 +52,12 @@ namespace SpaceInvaders2
         public MainPage()
         {
             InitializeComponent();
-            
+
+            if (!File.Exists(DbPath))
+            {
+                File.Create(DbPath);
+            }
+
             StartLoop();
         }
 
@@ -65,6 +68,7 @@ namespace SpaceInvaders2
             EnemySpeed = 1;
             CreateEnemies();
             CurrentState = INPLAY;
+            PlayerBullet.Clear();
         }
 
         public void CreateEnemies()
@@ -73,7 +77,7 @@ namespace SpaceInvaders2
             
             for (int i = 0; i < EnemiesToSpawn; i++)
             {
-                EnemySpawnX = SpawnMultiplier * (int)(EnemySize * 1.2);
+                EnemySpawnX = (SpawnMultiplier * (int)(EnemySize * 1.1)) + 20;
 
                 BasicEnemies Enemy = new BasicEnemies
                 {
@@ -133,6 +137,7 @@ namespace SpaceInvaders2
                 EnemySpeed = 1;
                 EnemySpawnY = 50;
                 CreateEnemies();
+                PlayerBullet.Clear();
             }
             int LastIndex = BasicEnemies.Count;
 
@@ -140,40 +145,50 @@ namespace SpaceInvaders2
             {
                 GameOverLogic();
                 CurrentState = GAMEOVER;
+                PlayerBullet.Clear();
             }
         }
 
         private async void GameOverLogic()
         {
             //Defines database
-            var db = new SQLiteConnection(DbPath);
-            db.CreateTable<HighScores>();
-
-            var maxPK = db.Table<HighScores>().OrderByDescending(x => x.ID).FirstOrDefault();
-
-
-            string Input = await InputBox(this.Navigation);
-
-            HighScores highscore = new HighScores()
+            if (CurrentScore > HighScore)
             {
-                Name = Input,
-                Score = CurrentScore
-            };
+                var db = new SQLiteConnection(DbPath);
 
-            db.Insert(highscore);
+                db.CreateTable<HighScores>();
 
-            foreach(BasicEnemies item in BasicEnemies.ToList())
-            {
-                BasicEnemies.Remove(item);
-            }
+                var maxPK = db.Table<HighScores>().OrderByDescending(x => x.ID).FirstOrDefault();
 
-            await Navigation.PushAsync(new HighScoresPage());
+
+                string Input = await InputBox(this.Navigation);
+
+                HighScores highscore = new HighScores()
+                {
+                    Name = Input,
+                    Score = CurrentScore
+                };
+
+                HighScore = CurrentScore;
+
+                db.Insert(highscore);
+
+                await Navigation.PushAsync(new HighScoresPage());
 
             ////save file every time you get a new file
+            }
+            //foreach(BasicEnemies item in BasicEnemies.ToList())
+            //{
+            //   BasicEnemies.Remove(item);
+            //}
+            await Task.Delay(1);
+
+            BasicEnemies.Clear();
+
             CurrentState = MENU;
             //HighScores.Add(temp);
 
-            HighScore = CurrentScore;
+            
             CurrentScore = 0;
             EnemySpeed = 1;
         }
@@ -250,15 +265,12 @@ namespace SpaceInvaders2
         {
             if (Ship.CanFire == true && Ship.CoolDownTime <= 0)
             {
-                //ShipFiring.Text = $"Firing: {Ship.CanFire}";
 
                 BulletConstructor();
                 Ship.CoolDownTime = Ship.TimerMax;
             }
             else
             {
-                //ShipFiring.Text = $"Firing: {Ship.CanFire}";
-
                 if (Ship.CoolDownTime > 0)
                 {
                     Ship.CoolDownTime--;
@@ -272,7 +284,7 @@ namespace SpaceInvaders2
             {
                 BasicEnemies[i].X += GlobalEnemyXdir * (int)EnemySpeed;
 
-                if (BasicEnemies[i].X >= Width || BasicEnemies[i].X <= 0)
+                if (BasicEnemies[i].X >= Width - BasicEnemies.First().Size || BasicEnemies[i].X <= 0)
                 {
                     for (int q = 0; q < BasicEnemies.Count; q++)
                     {
@@ -372,12 +384,6 @@ namespace SpaceInvaders2
                 Canvas.Clear();
 
                 g.Color = Color.Red.ToSKColor();
-
-                for (int i = 0; i < HighScores.Count; i++)
-                {
-                    Canvas.DrawText($"HighScore for {HighScores[i].Score}, of{HighScores[i].Name}", 0, (50) * i, g);
-                }
-
 
                 Canvas.DrawText($"HighScore: {HighScore}, Score: {CurrentScore}", 0, 20, g);
 
