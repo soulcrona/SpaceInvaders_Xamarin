@@ -11,12 +11,14 @@ using SkiaSharp.Views.Forms;
 //using SQLite;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using SQLite;
 
 namespace SpaceInvaders2
 {
     public partial class MainPage : ContentPage
     {
-        //string DbPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "MyDB.db");
+        string DbPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "MyDB.db3");
+        
 
         Ship Ship = new Ship();
 
@@ -52,6 +54,7 @@ namespace SpaceInvaders2
         public MainPage()
         {
             InitializeComponent();
+            
             StartLoop();
         }
 
@@ -67,10 +70,10 @@ namespace SpaceInvaders2
         public void CreateEnemies()
         {
             int SpawnMultiplier = 0;
-
+            
             for (int i = 0; i < EnemiesToSpawn; i++)
             {
-                EnemySpawnX = (SpawnMultiplier * (int)(EnemySize * 1.1)) + 20;
+                EnemySpawnX = SpawnMultiplier * (int)(EnemySize * 1.2);
 
                 BasicEnemies Enemy = new BasicEnemies
                 {
@@ -80,8 +83,8 @@ namespace SpaceInvaders2
                 };
 
                 SpawnMultiplier++;
-
-                if (i == EnemiesToSpawn / 2 - 1)
+                
+                if (i == EnemiesToSpawn/2 -1)
                 {
                     EnemySpawnY += (int)(Enemy.Size * 1.2);
                     SpawnMultiplier = 0;
@@ -89,6 +92,7 @@ namespace SpaceInvaders2
 
                 BasicEnemies.Add(Enemy);
             }
+
         }
 
         public void GiveShipValues()
@@ -132,36 +136,48 @@ namespace SpaceInvaders2
             }
             int LastIndex = BasicEnemies.Count;
 
-            if (BasicEnemies.Last().Y >= Height - BasicEnemies.Last().Size * 2)
+            if (BasicEnemies.Last().Y >= Height - BasicEnemies.Last().Size / 2)
             {
-                //clear all enemies
-                BasicEnemies.Clear();
                 GameOverLogic();
                 CurrentState = GAMEOVER;
             }
         }
 
-
         private async void GameOverLogic()
         {
-            if (CurrentScore > HighScore)
-            {
-                HighScore = CurrentScore;
-                string Input = await InputBox(this.Navigation);
+            //Defines database
+            var db = new SQLiteConnection(DbPath);
+            db.CreateTable<HighScores>();
 
-                HighScores temp = new HighScores
-                {
-                    Name = Input,
-                    Score = HighScore
-                };
-                //save file every time you get a new file
-                HighScores.Add(temp);
+            var maxPK = db.Table<HighScores>().OrderByDescending(x => x.ID).FirstOrDefault();
+
+
+            string Input = await InputBox(this.Navigation);
+
+            HighScores highscore = new HighScores()
+            {
+                Name = Input,
+                Score = CurrentScore
+            };
+
+            db.Insert(highscore);
+
+            foreach(BasicEnemies item in BasicEnemies.ToList())
+            {
+                BasicEnemies.Remove(item);
             }
-            await Task.Delay(13);
+
+            await Navigation.PushAsync(new HighScoresPage());
+
+            ////save file every time you get a new file
             CurrentState = MENU;
+            //HighScores.Add(temp);
+
+            HighScore = CurrentScore;
             CurrentScore = 0;
             EnemySpeed = 1;
         }
+
         //Big Yikes
         public static Task<string> InputBox(INavigation navigation)
         {
@@ -256,7 +272,7 @@ namespace SpaceInvaders2
             {
                 BasicEnemies[i].X += GlobalEnemyXdir * (int)EnemySpeed;
 
-                if (BasicEnemies[i].X >= ScreenWidth - BasicEnemies.First().Size || BasicEnemies[i].X <= 0)
+                if (BasicEnemies[i].X >= Width || BasicEnemies[i].X <= 0)
                 {
                     for (int q = 0; q < BasicEnemies.Count; q++)
                     {
@@ -348,20 +364,20 @@ namespace SpaceInvaders2
             ScreenHeight = e.Info.Height;
             ScreenWidth = e.Info.Width;
 
-
+            
             Ship.Y = (int)(e.Info.Height - (Ship.Size * 2));
 
             using (SKPaint g = new SKPaint())
             {
                 Canvas.Clear();
-                g.Color = Color.Black.ToSKColor();
 
                 g.Color = Color.Red.ToSKColor();
 
                 for (int i = 0; i < HighScores.Count; i++)
                 {
-                    Canvas.DrawText($"HighScore for {HighScores[i].Score}, of{HighScores[i].Name}", 0, (50) * i + 1, g);
+                    Canvas.DrawText($"HighScore for {HighScores[i].Score}, of{HighScores[i].Name}", 0, (50) * i, g);
                 }
+
 
                 Canvas.DrawText($"HighScore: {HighScore}, Score: {CurrentScore}", 0, 20, g);
 
@@ -372,7 +388,9 @@ namespace SpaceInvaders2
 
                     //Draw here
                     Canvas.DrawRect(Ship.X, Ship.Y, Ship.XSize, Ship.YSize, g);
-                    
+
+                    //make list instead of array, as array is static compared to java's non static nature
+
                     g.Color = Color.Green.ToSKColor();
                     //Paint Bullets
                     for (int i = 0; i < PlayerBullet.Count; i++)
@@ -478,8 +496,8 @@ namespace SpaceInvaders2
     [System.Serializable]
     public class HighScores
     {
-        //[PrimaryKey, AutoIncrement]
-        //public int ID { get; set; }
+        [PrimaryKey, AutoIncrement]
+        public int ID { get; set; }
         public string Name { get; set; }
         public int Score { get; set; }
     }
