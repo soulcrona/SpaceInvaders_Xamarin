@@ -28,9 +28,7 @@ namespace SpaceInvaders2
         int EnemySpawnX = 0;
         int EnemySize = 50;
 
-        //int CountDown = 3;
-
-        int EnemiesToSpawn = 10;
+        int EnemiesToSpawn = 12;
 
 
         int GlobalEnemyXdir = 1;
@@ -55,8 +53,6 @@ namespace SpaceInvaders2
         {
             InitializeComponent();
             StartLoop();
-
-            //GameOverLogic();
         }
 
         public void StartButton()
@@ -71,8 +67,7 @@ namespace SpaceInvaders2
         public void CreateEnemies()
         {
             int SpawnMultiplier = 0;
-
-            //crashes if enemies over the top of each other?
+            
             for (int i = 0; i < EnemiesToSpawn; i++)
             {
                 EnemySpawnX = SpawnMultiplier * (int)(EnemySize * 1.2);
@@ -85,10 +80,8 @@ namespace SpaceInvaders2
                 };
 
                 SpawnMultiplier++;
-
-                //500 being an arbitrary number
-                //Change 500 to screen. width - enemy size * 5 or something
-                if (EnemySpawnX >= 300)
+                
+                if (i == EnemiesToSpawn/2 -1)
                 {
                     EnemySpawnY += (int)(Enemy.Size * 1.2);
                     SpawnMultiplier = 0;
@@ -102,8 +95,6 @@ namespace SpaceInvaders2
         public void GiveShipValues()
         {
             Ship.Size = 20;
-            // Ship.X = (int)Width / 2;
-            // Ship.Y = (int)Height - Ship.Size * 2;
             Ship.X = (int)Width / 2;
             Ship.Y = (int)Height - Ship.Size * 2;
             Ship.Speed = .3f;
@@ -114,7 +105,6 @@ namespace SpaceInvaders2
         void Update()
         {
             SKCanvas.InvalidateSurface();
-
 
             switch (CurrentState)
             {
@@ -135,12 +125,10 @@ namespace SpaceInvaders2
 
         private void CheckIfGameOver()
         {
-            //if enemy x is less then the screen x
-            //well, not neccessirly game over, but game over loss, game over win restart.
-
             if (BasicEnemies.Count == 0)
             {
-                EnemySpeed = EnemySpeed / 2;
+                EnemySpeed = 1;
+                EnemySpawnY = 50;
                 CreateEnemies();
             }
             int LastIndex = BasicEnemies.Count;
@@ -167,6 +155,7 @@ namespace SpaceInvaders2
             HighScores.Add(temp);
 
             CurrentScore = 0;
+            EnemySpeed = 1;
         }
 
         //Big Yikes
@@ -248,7 +237,6 @@ namespace SpaceInvaders2
             }
             else
             {
-                //ew nested if 
                 //ShipFiring.Text = $"Firing: {Ship.CanFire}";
 
                 if (Ship.CoolDownTime > 0)
@@ -273,7 +261,6 @@ namespace SpaceInvaders2
                     GlobalEnemyXdir *= -1;
                 }
             }
-            //constantly speeding up
             EnemySpeed += 0.01f;
         }
 
@@ -353,11 +340,13 @@ namespace SpaceInvaders2
         void Graphics(object sender, SKPaintSurfaceEventArgs e)
         {
             SKCanvas Canvas = e.Surface.Canvas;
+
             ScreenHeight = e.Info.Height;
             ScreenWidth = e.Info.Width;
-            //run once
+
+            
             Ship.Y = (int)(e.Info.Height - (Ship.Size * 2));
-            //SKCanvasView Canvas = e.Surface.CanvasView;
+
             using (SKPaint g = new SKPaint())
             {
                 Canvas.Clear();
@@ -413,7 +402,6 @@ namespace SpaceInvaders2
             if (e.ActionType == SKTouchAction.Pressed)
             {
                 Ship.CanFire = true;
-                //For Android/ios 
                 Ship.MovementTarget = (int)e.Location.X;
                 e.Handled = true;
             }
@@ -467,7 +455,6 @@ namespace SpaceInvaders2
         public int Y { get; set; }
         public int Xdir { get; set; }
         public float Speed { get; set; }
-        //Maybe add in another one to squeeze and stretch
         public int Size { get; set; }
         public int XSize { get; set; }
         public int YSize { get; set; }
