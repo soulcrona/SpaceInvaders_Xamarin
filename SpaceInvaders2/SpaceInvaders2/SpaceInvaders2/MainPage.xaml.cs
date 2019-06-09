@@ -11,12 +11,14 @@ using SkiaSharp.Views.Forms;
 //using SQLite;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using SQLite;
 
 namespace SpaceInvaders2
 {
     public partial class MainPage : ContentPage
     {
-        //string DbPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "MyDB.db");
+        string DbPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "MyDB.db3");
+        
 
         Ship Ship = new Ship();
 
@@ -52,6 +54,7 @@ namespace SpaceInvaders2
         public MainPage()
         {
             InitializeComponent();
+            
             StartLoop();
         }
 
@@ -142,18 +145,35 @@ namespace SpaceInvaders2
 
         private async void GameOverLogic()
         {
-            HighScore = CurrentScore;
+            //Defines database
+            var db = new SQLiteConnection(DbPath);
+            db.CreateTable<HighScores>();
+
+            var maxPK = db.Table<HighScores>().OrderByDescending(x => x.ID).FirstOrDefault();
+
+
             string Input = await InputBox(this.Navigation);
 
-            HighScores temp = new HighScores
+            HighScores highscore = new HighScores()
             {
                 Name = Input,
-                Score = HighScore
+                Score = CurrentScore
             };
-            //save file every time you get a new file
-            CurrentState = MENU;
-            HighScores.Add(temp);
 
+            db.Insert(highscore);
+
+            foreach(BasicEnemies item in BasicEnemies.ToList())
+            {
+                BasicEnemies.Remove(item);
+            }
+
+            await Navigation.PushAsync(new HighScoresPage());
+
+            ////save file every time you get a new file
+            CurrentState = MENU;
+            //HighScores.Add(temp);
+
+            HighScore = CurrentScore;
             CurrentScore = 0;
             EnemySpeed = 1;
         }
@@ -476,8 +496,8 @@ namespace SpaceInvaders2
     [System.Serializable]
     public class HighScores
     {
-        //[PrimaryKey, AutoIncrement]
-        //public int ID { get; set; }
+        [PrimaryKey, AutoIncrement]
+        public int ID { get; set; }
         public string Name { get; set; }
         public int Score { get; set; }
     }
